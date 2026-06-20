@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloc-notes · localStorage</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: linear-gradient(145deg, #f5f0eb 0%, #e8e2da 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      padding: 1.5rem;
+    }
+    .notepad {
+      max-width: 800px;
+      width: 100%;
+      background: #fefcf7;
+      border-radius: 2.5rem;
+      box-shadow: 
+        0 20px 40px rgba(0,0,0,0.15),
+        0 8px 16px rgba(0,0,0,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.7);
+      padding: 2rem 2rem 1.8rem;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(2px);
+      border: 1px solid rgba(255,245,235,0.5);
+    }
+    h1 {
+      font-weight: 500;
+      font-size: 1.9rem;
+      letter-spacing: -0.5px;
+      color: #3c2e26;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+    h1 small {
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #8a7a6e;
+      margin-left: 0.4rem;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0.5rem 0 1.2rem 0;
+      flex-wrap: wrap;
+      gap: 0.6rem 1rem;
+      border-bottom: 1px solid #e7dfd7;
+      padding-bottom: 0.9rem;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #6b5d52;
+      background: #f2ece6;
+      padding: 0.3rem 1rem 0.3rem 1.2rem;
+      border-radius: 40px;
+      letter-spacing: 0.2px;
+    }
+    .status span {
+      font-weight: 500;
+      color: #3c2e26;
+    }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn {
+      background: #f0e9e2;
+      border: none;
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #3f3229;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      border: 1px solid transparent;
+    }
+    .btn:hover {
+      background: #e3d9d0;
+      transform: scale(0.97);
+      border-color: #cec0b4;
+    }
+    .btn:active {
+      background: #d5c9be;
+      transform: scale(0.94);
+    }
+    .btn-primary {
+      background: #dacfc4;
+      color: #2b211b;
+      font-weight: 600;
+      border-color: #c8b9ab;
+    }
+    .btn-primary:hover {
+      background: #cdbfb2;
+    }
+    textarea {
+      width: 100%;
+      height: 380px;
+      padding: 1.4rem 1.6rem;
+      font-size: 1rem;
+      line-height: 1.7;
+      border: 1px solid #e2d7cd;
+      border-radius: 1.8rem;
+      background: #fefcf9;
+      color: #2f261f;
+      resize: vertical;
+      font-family: 'Segoe UI', 'Courier New', monospace;
+      transition: 0.2s;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.02);
+      outline: none;
+      letter-spacing: 0.2px;
+    }
+    textarea:focus {
+      border-color: #bbaa9a;
+      box-shadow: 0 0 0 4px rgba(190, 172, 158, 0.2), inset 0 2px 6px rgba(0,0,0,0.02);
+      background: #ffffff;
+    }
+    .footer-notes {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.9rem;
+      font-size: 0.75rem;
+      color: #917f71;
+      padding: 0 0.3rem;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.8rem;
+    }
+    .footer-notes .key-hint {
+      display: flex;
+      gap: 0.3rem 1rem;
+      flex-wrap: wrap;
+    }
+    .key-hint kbd {
+      background: #ece4dc;
+      padding: 0.1rem 0.7rem;
+      border-radius: 30px;
+      font-family: inherit;
+      color: #55473d;
+      font-size: 0.7rem;
+      border: 1px solid #d6c9bd;
+    }
+    .toast {
+      background: #2b221c;
+      color: #f2ebe3;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+    @media (max-width: 480px) {
+      .notepad { padding: 1.5rem 1rem; }
+      textarea { height: 280px; padding: 1rem; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .status { justify-content: center; }
+      .actions { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="notepad" role="main">
+  <h1>
+    📝 Bloc-notes
+    <small>· local</small>
+  </h1>
+
+  <div class="toolbar">
+    <div class="status" id="statusDisplay">
+      <span id="wordCount">0</span> mots · 
+      <span id="charCount">0</span> caractères
+    </div>
+    <div class="actions">
+      <button class="btn" id="clearBtn" title="Effacer le contenu">🗑️ Effacer</button>
+      <button class="btn btn-primary" id="saveBtn">💾 Sauvegarder</button>
+    </div>
+  </div>
+
+  <textarea id="noteArea" placeholder="Écrivez votre note ici… (sauvegarde automatique)"></textarea>
+
+  <div class="footer-notes">
+    <div class="key-hint">
+      <kbd>⌘S</kbd> <span style="color:#9b8a7b;">ou</span> <kbd>Ctrl+S</kbd>
+      <span style="margin-left:0.4rem;">sauvegarde</span>
+    </div>
+    <div id="toastMessage" class="toast">✅ Sauvegardé</div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    "use strict";
+
+    // ----- Éléments DOM -----
+    const noteArea = document.getElementById('noteArea');
+    const wordCountSpan = document.getElementById('wordCount');
+    const charCountSpan = document.getElementById('charCount');
+    const saveBtn = document.getElementById('saveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const toast = document.getElementById('toastMessage');
+
+    // ----- Clé localStorage -----
+    const STORAGE_KEY = 'notepad_content';
+
+    // ----- État -----
+    let saveTimeout = null;
+    let toastTimeout = null;
+
+    // ----- Utilitaires -----
+    function updateStats() {
+      const text = noteArea.value;
+      const charCount = text.length;
+      const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+      wordCountSpan.textContent = words;
+      charCountSpan.textContent = charCount;
+    }
+
+    // ----- Sauvegarde dans localStorage -----
+    function saveToLocalStorage() {
+      const content = noteArea.value;
+      try {
+        localStorage.setItem(STORAGE_KEY, content);
+        showToast('✅ Sauvegardé');
+      } catch (e) {
+        showToast('⚠️ Erreur de sauvegarde');
+        console.warn('localStorage error:', e);
+      }
+    }
+
+    // ----- Sauvegarde automatique (debounce) -----
+    function scheduleAutoSave() {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveToLocalStorage();
+        saveTimeout = null;
+      }, 400); // délai de 400ms après le dernier changement
+    }
+
+    // ----- Afficher un toast -----
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+        toastTimeout = null;
+      }, 1800);
+    }
+
+    // ----- Charger depuis localStorage -----
+    function loadFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved !== null) {
+          noteArea.value = saved;
+        } else {
+          // Valeur par défaut si aucune note
+          noteArea.value = 'Bienvenue dans votre bloc-notes 📓\nTapez votre texte, il sera sauvegardé automatiquement.';
+        }
+      } catch (e) {
+        console.warn('Impossible de lire localStorage:', e);
+        noteArea.value = '⚠️ Erreur de chargement, mais vous pouvez écrire.';
+      }
+      updateStats();
+    }
+
+    // ----- Effacer le contenu (avec confirmation) -----
+    function clearContent() {
+      if (noteArea.value.trim() === '') {
+        // déjà vide, pas besoin de confirmer
+        return;
+      }
+      if (confirm('Effacer tout le texte ? Cette action est irréversible.')) {
+        noteArea.value = '';
+        updateStats();
+        // sauvegarde immédiate après effacement
+        saveToLocalStorage();
+        showToast('🗑️ Note effacée');
+        noteArea.focus();
+      }
+    }
+
+    // ----- Gestionnaire d'événements -----
+
+    // 1. Changement de texte → mise à jour stats + sauvegarde auto
+    noteArea.addEventListener('input', function() {
+      updateStats();
+      scheduleAutoSave();
+    });
+
+    // 2. Sauvegarde manuelle (bouton)
+    saveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      saveToLocalStorage();
+      // On annule l'auto-save en attente pour éviter les doublons
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+    });
+
+    // 3. Effacer (bouton)
+    clearBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearContent();
+    });
+
+    // 4. Raccourci clavier : Ctrl+S / Cmd+S → sauvegarde manuelle
+    document.addEventListener('keydown', function(e) {
+      // Vérifier si Ctrl ou Cmd est enfoncé, et si la touche S est pressée
+      const isSaveShortcut = (e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey);
+      if (isSaveShortcut) {
+        e.preventDefault();  // Empêche la boîte de dialogue "Enregistrer sous" du navigateur
+        saveToLocalStorage();
+        if (saveTimeout) {
+          clearTimeout(saveTimeout);
+          saveTimeout = null;
+        }
+        // petit retour visuel
+        noteArea.style.transition = 'background 0.1s';
+        noteArea.style.background = '#f4ede6';
+        setTimeout(() => { noteArea.style.background = ''; }, 150);
+      }
+    });
+
+    // 5. Chargement initial
+    loadFromLocalStorage();
+
+    // 6. Sauvegarde avant de quitter la page (au cas où)
+    window.addEventListener('beforeunload', function() {
+      // Sauvegarde forcée sans attendre le debounce
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+      // On sauvegarde immédiatement
+      try {
+        localStorage.setItem(STORAGE_KEY, noteArea.value);
+      } catch (_) { /* ignore */ }
+    });
+
+    // 7. Si l'utilisateur clique ailleurs, on peut sauvegarder (sans perdre)
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') {
+        // Sauvegarde quand l'onglet devient caché (ex: changement d'onglet)
+        if (saveTimeout) {
+          clearTimeout(saveTimeout);
+          saveTimeout = null;
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, noteArea.value);
+        } catch (_) { /* ignore */ }
+      }
+    });
+
+    // Petit bonus : focus sur la zone de texte au chargement
+    noteArea.focus();
+
+    // Mise à jour des stats au chargement (déjà fait dans loadFromLocalStorage)
+    // mais on rappelle pour être sûr (si la valeur par défaut est chargée)
+    updateStats();
+
+    console.log('📓 Bloc-notes local prêt. Sauvegarde automatique activée.');
+  })();
+</script>
+</body>
+</html>
